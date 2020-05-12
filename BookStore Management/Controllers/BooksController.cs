@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.Xml;
 using System.Threading.Tasks;
 using BookStore_Management.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +13,9 @@ namespace BookStore_Management.Controllers
     {
         private readonly ApplicationDbContext _db;
 
+        [BindProperty]
+        public Book Book { get; set; }
+
         public BooksController(ApplicationDbContext db)
         {
             _db = db;
@@ -19,6 +23,44 @@ namespace BookStore_Management.Controllers
         public IActionResult Index()
         {
             return View();
+        }
+
+        public IActionResult Upsert(int? id)
+        {
+            Book = new Book();
+            if (id == null)
+            {
+                return View(Book);
+            }
+            Book = _db.Books.FirstOrDefault(u => u.id == id);
+            if (Book == null)
+            {
+                return NotFound();
+            }
+            return View(Book);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Upsert()
+        {
+            
+           if(ModelState.IsValid)
+            {
+                if (Book.id == 0)
+                {
+                    _db.Books.Add(Book);
+                }
+                else
+                {
+                    _db.Books.Update(Book);
+                }
+                _db.SaveChanges();
+                return RedirectToAction("Index");
+            }
+
+
+            return View(Book);
         }
 
 
